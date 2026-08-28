@@ -1,39 +1,31 @@
--- SHOP GUI WITH LEADERSTAT INTEGRATION & HATCHING CUTSCENE
+-- SHOP GUI V2 - CLEANER DESIGN
 -- Place in StarterPlayer > StarterPlayerScripts as a LocalScript
 
-print("🎮 Shop GUI Script Starting...")
+print("🎮 Shop GUI V2 Starting...")
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
-print("✅ Got local player: " .. player.Name)
-
--- Wait for PlayerGui
 local playerGui = player:WaitForChild("PlayerGui")
-print("✅ Got PlayerGui")
 
 -- Wait for remotes
 local shopRemotes = ReplicatedStorage:WaitForChild("ShopRemotes")
 local hatchRemotes = ReplicatedStorage:WaitForChild("HatchRemotes")
-print("✅ Found remotes")
 
 local buyEggEvent = shopRemotes:WaitForChild("BuyEgg")
 local getShopDataFunc = shopRemotes:WaitForChild("GetShopData")
 local getPlayerCurrencyFunc = shopRemotes:WaitForChild("GetPlayerCurrency")
 local getInventoryFunc = shopRemotes:WaitForChild("GetInventory")
 local hatchEggEvent = hatchRemotes:WaitForChild("HatchEgg")
-
-print("✅ All remotes found")
+local equipPetEvent = hatchRemotes:WaitForChild("EquipPet")
 
 -- Get coins leaderstat
 local leaderstats = player:WaitForChild("leaderstats")
 local coins = leaderstats:WaitForChild("Coins")
 
-print("✅ Coins leaderstat found: $" .. coins.Value)
-
--- Pet data with randomized messages
+-- Pet data
 local PETS = {
     ["Mouse"] = { 
         name = "Mouse", 
@@ -138,124 +130,114 @@ local PETS = {
 
 -- Create main GUI
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "ShopGui"
+screenGui.Name = "ShopGuiV2"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- Main Panel (Right Side)
-local panel = Instance.new("Frame")
-panel.Name = "MainPanel"
-panel.Size = UDim2.new(0, 400, 1, 0)
-panel.Position = UDim2.new(1, -410, 0, 0)
-panel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-panel.BorderColor3 = Color3.fromRGB(100, 100, 100)
-panel.BorderSizePixel = 2
-panel.Parent = screenGui
+-- Main container centered
+local mainContainer = Instance.new("Frame")
+mainContainer.Name = "MainContainer"
+mainContainer.Size = UDim2.new(0, 500, 0, 600)
+mainContainer.Position = UDim2.new(0.5, -250, 0.5, -300)
+mainContainer.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+mainContainer.BorderColor3 = Color3.fromRGB(100, 200, 255)
+mainContainer.BorderSizePixel = 3
+mainContainer.Parent = screenGui
+
+-- Header
+local header = Instance.new("Frame")
+header.Name = "Header"
+header.Size = UDim2.new(1, 0, 0, 100)
+header.Position = UDim2.new(0, 0, 0, 0)
+header.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+header.BorderSizePixel = 0
+header.Parent = mainContainer
 
 -- Title
 local title = Instance.new("TextLabel")
 title.Name = "Title"
-title.Size = UDim2.new(1, 0, 0, 60)
+title.Size = UDim2.new(1, 0, 0, 50)
 title.Position = UDim2.new(0, 0, 0, 0)
-title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-title.TextColor3 = Color3.fromRGB(255, 215, 0)
-title.TextSize = 24
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(100, 200, 255)
+title.TextSize = 32
 title.Font = Enum.Font.GothamBold
-title.Text = "🛍️ PET SHOP"
-title.BorderSizePixel = 0
-title.Parent = panel
+title.Text = "🎮 PET WORLD"
+title.Parent = header
 
--- Currency Label (connected to Coins leaderstat)
-local currencyLabel = Instance.new("TextLabel")
-currencyLabel.Name = "CurrencyLabel"
-currencyLabel.Size = UDim2.new(1, -20, 0, 40)
-currencyLabel.Position = UDim2.new(0, 10, 0, 70)
-currencyLabel.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-currencyLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
-currencyLabel.TextSize = 16
-currencyLabel.Font = Enum.Font.GothamBold
-currencyLabel.Text = "💰 Coins: $" .. coins.Value
-currencyLabel.BorderColor3 = Color3.fromRGB(255, 215, 0)
-currencyLabel.BorderSizePixel = 1
-currencyLabel.Parent = panel
+-- Coins display
+local coinsDisplay = Instance.new("TextLabel")
+coinsDisplay.Name = "CoinsDisplay"
+coinsDisplay.Size = UDim2.new(1, -20, 0, 40)
+coinsDisplay.Position = UDim2.new(0, 10, 0, 50)
+coinsDisplay.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+coinsDisplay.TextColor3 = Color3.fromRGB(255, 215, 0)
+coinsDisplay.TextSize = 18
+coinsDisplay.Font = Enum.Font.GothamBold
+coinsDisplay.Text = "💰 " .. coins.Value .. " Coins"
+coinsDisplay.BorderColor3 = Color3.fromRGB(255, 215, 0)
+coinsDisplay.BorderSizePixel = 2
+coinsDisplay.Parent = header
 
--- Update currency display when coins change
 coins.Changed:Connect(function(value)
-    currencyLabel.Text = "💰 Coins: $" .. value
-    print("💰 Currency updated: $" .. value)
+    coinsDisplay.Text = "💰 " .. value .. " Coins"
 end)
 
--- SHOP TAB BUTTON
-local shopBtn = Instance.new("TextButton")
-shopBtn.Name = "ShopBtn"
-shopBtn.Size = UDim2.new(0.33, -3, 0, 40)
-shopBtn.Position = UDim2.new(0, 10, 0, 120)
-shopBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
-shopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-shopBtn.TextSize = 14
-shopBtn.Font = Enum.Font.GothamBold
-shopBtn.Text = "🛒 SHOP"
-shopBtn.BorderSizePixel = 0
-shopBtn.Parent = panel
+-- Tabs
+local tabBar = Instance.new("Frame")
+tabBar.Name = "TabBar"
+tabBar.Size = UDim2.new(1, 0, 0, 50)
+tabBar.Position = UDim2.new(0, 0, 0, 100)
+tabBar.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+tabBar.BorderSizePixel = 0
+tabBar.Parent = mainContainer
 
--- EGGS TAB BUTTON
-local eggsBtn = Instance.new("TextButton")
-eggsBtn.Name = "EggsBtn"
-eggsBtn.Size = UDim2.new(0.33, -3, 0, 40)
-eggsBtn.Position = UDim2.new(0.33, 7, 0, 120)
-eggsBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-eggsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-eggsBtn.TextSize = 14
-eggsBtn.Font = Enum.Font.GothamBold
-eggsBtn.Text = "🥚 EGGS"
-eggsBtn.BorderSizePixel = 0
-eggsBtn.Parent = panel
+local function createTab(name, icon, pos)
+    local tabBtn = Instance.new("TextButton")
+    tabBtn.Name = name .. "Tab"
+    tabBtn.Size = UDim2.new(0.25, -2, 1, 0)
+    tabBtn.Position = UDim2.new(pos, 0, 0, 0)
+    tabBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    tabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    tabBtn.TextSize = 14
+    tabBtn.Font = Enum.Font.GothamBold
+    tabBtn.Text = icon .. "\n" .. name
+    tabBtn.BorderSizePixel = 0
+    tabBtn.Parent = tabBar
+    return tabBtn
+end
 
--- UPGRADES TAB BUTTON
-local upgradesBtn = Instance.new("TextButton")
-upgradesBtn.Name = "UpgradesBtn"
-upgradesBtn.Size = UDim2.new(0.33, -3, 0, 40)
-upgradesBtn.Position = UDim2.new(0.67, 3, 0, 120)
-upgradesBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-upgradesBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-upgradesBtn.TextSize = 14
-upgradesBtn.Font = Enum.Font.GothamBold
-upgradesBtn.Text = "⬆️ UP"
-upgradesBtn.BorderSizePixel = 0
-upgradesBtn.Parent = panel
+local shopTabBtn = createTab("SHOP", "🛒", 0)
+local eggsTabBtn = createTab("EGGS", "🥚", 0.25)
+local petsTabBtn = createTab("PETS", "🐾", 0.5)
+local upgradesTabBtn = createTab("UPGRADES", "⬆️", 0.75)
 
--- Content Area
-local content = Instance.new("ScrollingFrame")
-content.Name = "Content"
-content.Size = UDim2.new(1, 0, 1, -170)
-content.Position = UDim2.new(0, 0, 0, 170)
-content.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-content.BorderSizePixel = 0
-content.CanvasSize = UDim2.new(0, 0, 0, 500)
-content.ScrollBarThickness = 8
-content.Parent = panel
+-- Content area
+local contentArea = Instance.new("ScrollingFrame")
+contentArea.Name = "ContentArea"
+contentArea.Size = UDim2.new(1, 0, 1, -150)
+contentArea.Position = UDim2.new(0, 0, 0, 150)
+contentArea.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+contentArea.BorderSizePixel = 0
+contentArea.CanvasSize = UDim2.new(0, 0, 0, 0)
+contentArea.ScrollBarThickness = 8
+contentArea.ScrollBarImageColor3 = Color3.fromRGB(100, 200, 255)
+contentArea.Parent = mainContainer
 
--- Hatching cutscene function
+-- Hatching cutscene
 local function showHatchingCutscene(petType)
-    print("🎬 Starting hatching cutscene for: " .. petType)
+    print("🎬 Hatching: " .. petType)
     
     local petData = PETS[petType]
-    if not petData then
-        print("❌ Pet not found: " .. petType)
-        return
-    end
+    if not petData then return end
     
-    -- Get random message from pet's message pool
     local randomMessage = petData.messages[math.random(1, #petData.messages)]
-    print("💬 Random message: " .. randomMessage)
     
-    -- Create cutscene GUI
     local cutsceneGui = Instance.new("ScreenGui")
     cutsceneGui.Name = "HatchCutscene"
     cutsceneGui.ResetOnSpawn = false
     cutsceneGui.Parent = playerGui
     
-    -- Black fade background
     local fadeBackground = Instance.new("Frame")
     fadeBackground.Name = "FadeBackground"
     fadeBackground.Size = UDim2.new(1, 0, 1, 0)
@@ -266,7 +248,6 @@ local function showHatchingCutscene(petType)
     
     wait(0.5)
     
-    -- Create egg part in workspace
     local egg = Instance.new("Part")
     egg.Shape = Enum.PartType.Ball
     egg.Size = Vector3.new(1.5, 1.5, 1.5)
@@ -275,13 +256,8 @@ local function showHatchingCutscene(petType)
     egg.CanCollide = false
     egg.CFrame = camera.CFrame + camera.CFrame.LookVector * 15
     egg.Name = "HatchingEgg"
-    egg.TopSurface = Enum.SurfaceType.Smooth
-    egg.BottomSurface = Enum.SurfaceType.Smooth
     egg.Parent = workspace
     
-    print("✅ Egg created for cutscene")
-    
-    -- Fade out black screen
     for i = 1, 20 do
         fadeBackground.BackgroundTransparency = 1 - (i / 20)
         wait(0.02)
@@ -289,8 +265,6 @@ local function showHatchingCutscene(petType)
     
     wait(0.5)
     
-    -- Egg hatching animation (shaking)
-    print("⏳ Egg is hatching...")
     for i = 1, 30 do
         egg.CFrame = egg.CFrame * CFrame.Angles(math.rad(math.random(-10, 10)), math.rad(math.random(-10, 10)), math.rad(math.random(-10, 10)))
         wait(0.05)
@@ -298,8 +272,6 @@ local function showHatchingCutscene(petType)
     
     wait(0.5)
     
-    -- Egg explosion effect
-    print("💥 Egg is exploding!")
     for i = 1, 15 do
         local particle = Instance.new("Part")
         particle.Shape = Enum.PartType.Ball
@@ -318,32 +290,26 @@ local function showHatchingCutscene(petType)
     end
     
     egg:Destroy()
-    
     wait(0.5)
     
-    -- Show pet obtained message with random message
     fadeBackground.BackgroundTransparency = 1
     
     local messageLabel = Instance.new("TextLabel")
     messageLabel.Name = "PetObtainedMessage"
     messageLabel.Size = UDim2.new(0, 600, 0, 250)
     messageLabel.Position = UDim2.new(0.5, -300, 0.5, -125)
-    messageLabel.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    messageLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+    messageLabel.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    messageLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
     messageLabel.TextSize = 36
     messageLabel.Font = Enum.Font.GothamBold
     messageLabel.Text = randomMessage .. "\n\n" .. petData.name .. "\n(" .. petData.rarity .. ")"
     messageLabel.TextWrapped = true
-    messageLabel.BorderColor3 = Color3.fromRGB(255, 215, 0)
+    messageLabel.BorderColor3 = Color3.fromRGB(100, 200, 255)
     messageLabel.BorderSizePixel = 3
     messageLabel.Parent = cutsceneGui
     
-    print("🎉 Showing pet obtained: " .. petType)
-    
-    -- Keep message for 3 seconds
     wait(3)
     
-    -- Fade out message
     for i = 1, 10 do
         messageLabel.BackgroundTransparency = i / 10
         messageLabel.TextTransparency = i / 10
@@ -353,247 +319,363 @@ local function showHatchingCutscene(petType)
     
     wait(0.5)
     cutsceneGui:Destroy()
-    
-    print("✅ Cutscene complete!")
 end
 
--- Function to refresh shop display
+-- Refresh shop
 local function refreshShop()
-    content:ClearAllChildren()
+    contentArea:ClearAllChildren()
     
     local shopData = getShopDataFunc:InvokeServer()
-    print("✅ Got shop data from server")
     
     local yPos = 10
     for eggType, eggData in pairs(shopData) do
-        local itemFrame = Instance.new("Frame")
-        itemFrame.Name = eggType
-        itemFrame.Size = UDim2.new(1, -20, 0, 100)
-        itemFrame.Position = UDim2.new(0, 10, 0, yPos)
-        itemFrame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        itemFrame.BorderColor3 = eggData.color
-        itemFrame.BorderSizePixel = 2
-        itemFrame.Parent = content
+        local card = Instance.new("Frame")
+        card.Name = eggType
+        card.Size = UDim2.new(1, -30, 0, 120)
+        card.Position = UDim2.new(0, 15, 0, yPos)
+        card.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+        card.BorderColor3 = eggData.color
+        card.BorderSizePixel = 2
+        card.Parent = contentArea
         
-        local nameLabel = Instance.new("TextLabel")
-        nameLabel.Size = UDim2.new(1, 0, 0, 25)
-        nameLabel.Position = UDim2.new(0, 5, 0, 5)
-        nameLabel.BackgroundTransparency = 1
-        nameLabel.TextColor3 = eggData.color
-        nameLabel.TextSize = 14
-        nameLabel.Font = Enum.Font.GothamBold
-        nameLabel.Text = "🥚 " .. eggData.name
-        nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-        nameLabel.Parent = itemFrame
+        local eggName = Instance.new("TextLabel")
+        eggName.Size = UDim2.new(0.6, -10, 0, 30)
+        eggName.Position = UDim2.new(0, 10, 0, 5)
+        eggName.BackgroundTransparency = 1
+        eggName.TextColor3 = eggData.color
+        eggName.TextSize = 16
+        eggName.Font = Enum.Font.GothamBold
+        eggName.Text = "🥚 " .. eggData.name
+        eggName.TextXAlignment = Enum.TextXAlignment.Left
+        eggName.Parent = card
         
-        local rarityLabel = Instance.new("TextLabel")
-        rarityLabel.Size = UDim2.new(0, 80, 0, 20)
-        rarityLabel.Position = UDim2.new(1, -90, 0, 5)
-        rarityLabel.BackgroundColor3 = eggData.color
-        rarityLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
-        rarityLabel.TextSize = 11
-        rarityLabel.Font = Enum.Font.GothamBold
-        rarityLabel.Text = eggData.rarity
-        rarityLabel.BorderSizePixel = 0
-        rarityLabel.Parent = itemFrame
+        local rarity = Instance.new("TextLabel")
+        rarity.Size = UDim2.new(0.35, -10, 0, 30)
+        rarity.Position = UDim2.new(0.65, 0, 0, 5)
+        rarity.BackgroundColor3 = eggData.color
+        rarity.TextColor3 = Color3.fromRGB(0, 0, 0)
+        rarity.TextSize = 12
+        rarity.Font = Enum.Font.GothamBold
+        rarity.Text = eggData.rarity
+        rarity.BorderSizePixel = 0
+        rarity.Parent = card
         
-        local priceLabel = Instance.new("TextLabel")
-        priceLabel.Size = UDim2.new(1, 0, 0, 20)
-        priceLabel.Position = UDim2.new(0, 5, 0, 32)
-        priceLabel.BackgroundTransparency = 1
-        priceLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
-        priceLabel.TextSize = 12
-        priceLabel.Font = Enum.Font.Gotham
-        priceLabel.Text = "💰 Price: $" .. eggData.price
-        priceLabel.TextXAlignment = Enum.TextXAlignment.Left
-        priceLabel.Parent = itemFrame
+        local pets = Instance.new("TextLabel")
+        pets.Size = UDim2.new(1, -20, 0, 30)
+        pets.Position = UDim2.new(0, 10, 0, 40)
+        pets.BackgroundTransparency = 1
+        pets.TextColor3 = Color3.fromRGB(180, 180, 180)
+        pets.TextSize = 11
+        pets.Font = Enum.Font.Gotham
+        pets.Text = "Contains: " .. table.concat(eggData.petChances, ", ")
+        pets.TextXAlignment = Enum.TextXAlignment.Left
+        pets.TextWrapped = true
+        pets.Parent = card
         
-        local petsLabel = Instance.new("TextLabel")
-        petsLabel.Size = UDim2.new(1, 0, 0, 20)
-        petsLabel.Position = UDim2.new(0, 5, 0, 52)
-        petsLabel.BackgroundTransparency = 1
-        petsLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-        petsLabel.TextSize = 10
-        petsLabel.Font = Enum.Font.Gotham
-        local petList = table.concat(eggData.petChances, ", ")
-        petsLabel.Text = "Contains: " .. petList
-        petsLabel.TextXAlignment = Enum.TextXAlignment.Left
-        petsLabel.Parent = itemFrame
+        local price = Instance.new("TextLabel")
+        price.Size = UDim2.new(0.4, -10, 0, 25)
+        price.Position = UDim2.new(0, 10, 0, 80)
+        price.BackgroundTransparency = 1
+        price.TextColor3 = Color3.fromRGB(255, 215, 0)
+        price.TextSize = 14
+        price.Font = Enum.Font.GothamBold
+        price.Text = "💰 $" .. eggData.price
+        price.TextXAlignment = Enum.TextXAlignment.Left
+        price.Parent = card
         
         local buyBtn = Instance.new("TextButton")
-        buyBtn.Size = UDim2.new(0, 80, 0, 30)
-        buyBtn.Position = UDim2.new(1, -90, 1, -35)
-        buyBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+        buyBtn.Size = UDim2.new(0.4, -10, 0, 30)
+        buyBtn.Position = UDim2.new(0.55, 5, 0, 80)
+        buyBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
         buyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        buyBtn.TextSize = 12
+        buyBtn.TextSize = 13
         buyBtn.Font = Enum.Font.GothamBold
         buyBtn.Text = "BUY"
         buyBtn.BorderSizePixel = 0
-        buyBtn.Parent = itemFrame
+        buyBtn.Parent = card
         
         buyBtn.MouseButton1Click:Connect(function()
-            print("🛒 Attempting to buy: " .. eggType)
             buyEggEvent:FireServer(eggType)
-            wait(0.5)
-            refreshInventory() -- Refresh inventory after purchase
+            wait(0.3)
+            refreshEggs()
         end)
         
         buyBtn.MouseEnter:Connect(function()
-            buyBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+            buyBtn.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
         end)
         
         buyBtn.MouseLeave:Connect(function()
-            buyBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+            buyBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+        end)
+        
+        yPos = yPos + 130
+    end
+    
+    contentArea.CanvasSize = UDim2.new(0, 0, 0, yPos)
+end
+
+-- Refresh eggs
+local function refreshEggs()
+    contentArea:ClearAllChildren()
+    
+    local inventory = getInventoryFunc:InvokeServer()
+    
+    if #inventory.eggs == 0 then
+        local empty = Instance.new("TextLabel")
+        empty.Size = UDim2.new(1, 0, 0, 80)
+        empty.Position = UDim2.new(0, 0, 0.5, -40)
+        empty.BackgroundTransparency = 1
+        empty.TextColor3 = Color3.fromRGB(150, 150, 150)
+        empty.TextSize = 16
+        empty.Font = Enum.Font.GothamBold
+        empty.Text = "No eggs yet!\nBuy some from the shop."
+        empty.TextWrapped = true
+        empty.Parent = contentArea
+        return
+    end
+    
+    local yPos = 10
+    for i, egg in pairs(inventory.eggs) do
+        local card = Instance.new("Frame")
+        card.Name = "EggCard_" .. i
+        card.Size = UDim2.new(1, -30, 0, 100)
+        card.Position = UDim2.new(0, 15, 0, yPos)
+        card.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+        card.BorderColor3 = Color3.fromRGB(200, 150, 100)
+        card.BorderSizePixel = 2
+        card.Parent = contentArea
+        
+        local eggType = Instance.new("TextLabel")
+        eggType.Size = UDim2.new(0.6, -10, 0, 30)
+        eggType.Position = UDim2.new(0, 10, 0, 10)
+        eggType.BackgroundTransparency = 1
+        eggType.TextColor3 = Color3.fromRGB(255, 255, 255)
+        eggType.TextSize = 15
+        eggType.Font = Enum.Font.GothamBold
+        eggType.Text = "🥚 " .. egg.type
+        eggType.TextXAlignment = Enum.TextXAlignment.Left
+        eggType.Parent = card
+        
+        local slot = Instance.new("TextLabel")
+        slot.Size = UDim2.new(0.35, -10, 0, 30)
+        slot.Position = UDim2.new(0.65, 0, 0, 10)
+        slot.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+        slot.TextColor3 = Color3.fromRGB(150, 150, 150)
+        slot.TextSize = 12
+        slot.Font = Enum.Font.Gotham
+        slot.Text = "Slot #" .. i
+        slot.BorderSizePixel = 0
+        slot.Parent = card
+        
+        local status = Instance.new("TextLabel")
+        status.Size = UDim2.new(1, -20, 0, 20)
+        status.Position = UDim2.new(0, 10, 0, 45)
+        status.BackgroundTransparency = 1
+        status.TextColor3 = Color3.fromRGB(150, 200, 150)
+        status.TextSize = 11
+        status.Font = Enum.Font.Gotham
+        status.Text = "✓ Ready to hatch"
+        status.TextXAlignment = Enum.TextXAlignment.Left
+        status.Parent = card
+        
+        local hatchBtn = Instance.new("TextButton")
+        hatchBtn.Size = UDim2.new(0.9, -20, 0, 30)
+        hatchBtn.Position = UDim2.new(0.05, 10, 0, 65)
+        hatchBtn.BackgroundColor3 = Color3.fromRGB(150, 100, 0)
+        hatchBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        hatchBtn.TextSize = 13
+        hatchBtn.Font = Enum.Font.GothamBold
+        hatchBtn.Text = "HATCH 🐣"
+        hatchBtn.BorderSizePixel = 0
+        hatchBtn.Parent = card
+        
+        hatchBtn.MouseButton1Click:Connect(function()
+            hatchEggEvent:FireServer(i)
+            wait(5)
+            refreshEggs()
+        end)
+        
+        hatchBtn.MouseEnter:Connect(function()
+            hatchBtn.BackgroundColor3 = Color3.fromRGB(200, 150, 0)
+        end)
+        
+        hatchBtn.MouseLeave:Connect(function()
+            hatchBtn.BackgroundColor3 = Color3.fromRGB(150, 100, 0)
         end)
         
         yPos = yPos + 110
     end
     
-    content.CanvasSize = UDim2.new(0, 0, 0, yPos)
+    contentArea.CanvasSize = UDim2.new(0, 0, 0, yPos)
 end
 
--- Function to refresh inventory display
-local function refreshInventory()
-    content:ClearAllChildren()
+-- Refresh pets
+local function refreshPets()
+    contentArea:ClearAllChildren()
     
     local inventory = getInventoryFunc:InvokeServer()
-    print("✅ Got inventory from server, count: " .. #inventory)
     
-    if #inventory == 0 then
-        local emptyLabel = Instance.new("TextLabel")
-        emptyLabel.Size = UDim2.new(1, 0, 0, 60)
-        emptyLabel.Position = UDim2.new(0, 0, 0.5, -30)
-        emptyLabel.BackgroundTransparency = 1
-        emptyLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-        emptyLabel.TextSize = 14
-        emptyLabel.Font = Enum.Font.GothamBold
-        emptyLabel.Text = "🥚 Inventory Empty\n(Buy eggs from shop!)"
-        emptyLabel.TextWrapped = true
-        emptyLabel.Parent = content
+    if #inventory.pets == 0 then
+        local empty = Instance.new("TextLabel")
+        empty.Size = UDim2.new(1, 0, 0, 80)
+        empty.Position = UDim2.new(0, 0, 0.5, -40)
+        empty.BackgroundTransparency = 1
+        empty.TextColor3 = Color3.fromRGB(150, 150, 150)
+        empty.TextSize = 16
+        empty.Font = Enum.Font.GothamBold
+        empty.Text = "No pets yet!\nHatch some eggs!"
+        empty.TextWrapped = true
+        empty.Parent = contentArea
         return
     end
     
     local yPos = 10
-    for i, egg in pairs(inventory) do
-        local itemFrame = Instance.new("Frame")
-        itemFrame.Name = "EggItem_" .. i
-        itemFrame.Size = UDim2.new(1, -20, 0, 95)
-        itemFrame.Position = UDim2.new(0, 10, 0, yPos)
-        itemFrame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        itemFrame.BorderColor3 = Color3.fromRGB(200, 150, 100)
-        itemFrame.BorderSizePixel = 2
-        itemFrame.Parent = content
+    for i, pet in pairs(inventory.pets) do
+        local isEquipped = inventory.equippedPet == i
         
-        local typeLabel = Instance.new("TextLabel")
-        typeLabel.Size = UDim2.new(1, 0, 0, 25)
-        typeLabel.Position = UDim2.new(0, 5, 0, 5)
-        typeLabel.BackgroundTransparency = 1
-        typeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        typeLabel.TextSize = 14
-        typeLabel.Font = Enum.Font.GothamBold
-        typeLabel.Text = "🥚 " .. egg.type
-        typeLabel.TextXAlignment = Enum.TextXAlignment.Left
-        typeLabel.Parent = itemFrame
+        local card = Instance.new("Frame")
+        card.Name = "PetCard_" .. i
+        card.Size = UDim2.new(1, -30, 0, 110)
+        card.Position = UDim2.new(0, 15, 0, yPos)
+        card.BackgroundColor3 = isEquipped and Color3.fromRGB(60, 40, 80) or Color3.fromRGB(40, 40, 50)
+        card.BorderColor3 = pet.color
+        card.BorderSizePixel = isEquipped and 3 or 2
+        card.Parent = contentArea
         
-        local slotLabel = Instance.new("TextLabel")
-        slotLabel.Size = UDim2.new(0, 70, 0, 20)
-        slotLabel.Position = UDim2.new(1, -80, 0, 5)
-        slotLabel.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-        slotLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-        slotLabel.TextSize = 11
-        slotLabel.Font = Enum.Font.Gotham
-        slotLabel.Text = "Slot " .. i
-        slotLabel.BorderSizePixel = 0
-        slotLabel.Parent = itemFrame
+        local petName = Instance.new("TextLabel")
+        petName.Size = UDim2.new(0.6, -10, 0, 35)
+        petName.Position = UDim2.new(0, 10, 0, 10)
+        petName.BackgroundTransparency = 1
+        petName.TextColor3 = pet.color
+        petName.TextSize = 16
+        petName.Font = Enum.Font.GothamBold
+        petName.Text = "◼ " .. pet.name
+        petName.TextXAlignment = Enum.TextXAlignment.Left
+        petName.Parent = card
         
-        local statusLabel = Instance.new("TextLabel")
-        statusLabel.Size = UDim2.new(1, 0, 0, 18)
-        statusLabel.Position = UDim2.new(0, 5, 0, 33)
-        statusLabel.BackgroundTransparency = 1
-        statusLabel.TextColor3 = Color3.fromRGB(200, 200, 150)
-        statusLabel.TextSize = 11
-        statusLabel.Font = Enum.Font.Gotham
-        statusLabel.Text = "✓ Ready to hatch"
-        statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-        statusLabel.Parent = itemFrame
+        local rarity = Instance.new("TextLabel")
+        rarity.Size = UDim2.new(0.35, -10, 0, 35)
+        rarity.Position = UDim2.new(0.65, 0, 0, 10)
+        rarity.BackgroundColor3 = pet.color
+        rarity.TextColor3 = Color3.fromRGB(0, 0, 0)
+        rarity.TextSize = 12
+        rarity.Font = Enum.Font.GothamBold
+        rarity.Text = pet.rarity
+        rarity.BorderSizePixel = 0
+        rarity.Parent = card
         
-        local hatchBtn = Instance.new("TextButton")
-        hatchBtn.Size = UDim2.new(0, 80, 0, 30)
-        hatchBtn.Position = UDim2.new(1, -90, 1, -35)
-        hatchBtn.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
-        hatchBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        hatchBtn.TextSize = 12
-        hatchBtn.Font = Enum.Font.GothamBold
-        hatchBtn.Text = "HATCH"
-        hatchBtn.BorderSizePixel = 0
-        hatchBtn.Parent = itemFrame
+        if isEquipped then
+            local equipped = Instance.new("TextLabel")
+            equipped.Size = UDim2.new(1, -20, 0, 20)
+            equipped.Position = UDim2.new(0, 10, 0, 50)
+            equipped.BackgroundTransparency = 1
+            equipped.TextColor3 = Color3.fromRGB(100, 255, 100)
+            equipped.TextSize = 12
+            equipped.Font = Enum.Font.GothamBold
+            equipped.Text = "✓ EQUIPPED"
+            equipped.TextXAlignment = Enum.TextXAlignment.Left
+            equipped.Parent = card
+        end
         
-        hatchBtn.MouseButton1Click:Connect(function()
-            print("🐣 Hatching egg at slot " .. i)
-            hatchEggEvent:FireServer(i)
-            wait(5)
-            refreshInventory()
+        local equipBtn = Instance.new("TextButton")
+        equipBtn.Size = UDim2.new(0.9, -20, 0, 30)
+        equipBtn.Position = UDim2.new(0.05, 10, 0, 75)
+        if isEquipped then
+            equipBtn.BackgroundColor3 = Color3.fromRGB(100, 50, 50)
+            equipBtn.Text = "UNEQUIP"
+        else
+            equipBtn.BackgroundColor3 = Color3.fromRGB(50, 100, 150)
+            equipBtn.Text = "EQUIP"
+        end
+        equipBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        equipBtn.TextSize = 13
+        equipBtn.Font = Enum.Font.GothamBold
+        equipBtn.BorderSizePixel = 0
+        equipBtn.Parent = card
+        
+        equipBtn.MouseButton1Click:Connect(function()
+            equipPetEvent:FireServer(i)
+            wait(0.3)
+            refreshPets()
         end)
         
-        hatchBtn.MouseEnter:Connect(function()
-            hatchBtn.BackgroundColor3 = Color3.fromRGB(250, 150, 0)
+        equipBtn.MouseEnter:Connect(function()
+            if isEquipped then
+                equipBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
+            else
+                equipBtn.BackgroundColor3 = Color3.fromRGB(100, 150, 200)
+            end
         end)
         
-        hatchBtn.MouseLeave:Connect(function()
-            hatchBtn.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
+        equipBtn.MouseLeave:Connect(function()
+            if isEquipped then
+                equipBtn.BackgroundColor3 = Color3.fromRGB(100, 50, 50)
+            else
+                equipBtn.BackgroundColor3 = Color3.fromRGB(50, 100, 150)
+            end
         end)
         
-        yPos = yPos + 105
+        yPos = yPos + 120
     end
     
-    content.CanvasSize = UDim2.new(0, 0, 0, yPos)
+    contentArea.CanvasSize = UDim2.new(0, 0, 0, yPos)
 end
 
--- Listen for hatch results from server
-hatchEggEvent.OnClientEvent:Connect(function(petType, petData)
-    print("🐣 Client received pet from server: " .. petType)
-    showHatchingCutscene(petType)
-end)
-
--- Function to show upgrades
+-- Refresh upgrades
 local function refreshUpgrades()
-    content:ClearAllChildren()
+    contentArea:ClearAllChildren()
     
-    local upLabel = Instance.new("TextLabel")
-    upLabel.Size = UDim2.new(1, 0, 0, 60)
-    upLabel.Position = UDim2.new(0, 0, 0.5, -30)
-    upLabel.BackgroundTransparency = 1
-    upLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    upLabel.TextSize = 14
-    upLabel.Font = Enum.Font.GothamBold
-    upLabel.Text = "⬆️ Upgrades Coming Soon!\n(Check back later)"
-    upLabel.TextWrapped = true
-    upLabel.Parent = content
+    local coming = Instance.new("TextLabel")
+    coming.Size = UDim2.new(1, 0, 0, 80)
+    coming.Position = UDim2.new(0, 0, 0.5, -40)
+    coming.BackgroundTransparency = 1
+    coming.TextColor3 = Color3.fromRGB(150, 150, 150)
+    coming.TextSize = 16
+    coming.Font = Enum.Font.GothamBold
+    coming.Text = "Upgrades\nComing Soon! ⬆️"
+    coming.TextWrapped = true
+    coming.Parent = contentArea
 end
 
--- TAB SWITCHING
-shopBtn.MouseButton1Click:Connect(function()
-    shopBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
-    eggsBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-    upgradesBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+-- Tab connections
+shopTabBtn.MouseButton1Click:Connect(function()
+    shopTabBtn.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
+    eggsTabBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    petsTabBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    upgradesTabBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
     refreshShop()
 end)
 
-eggsBtn.MouseButton1Click:Connect(function()
-    shopBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-    eggsBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
-    upgradesBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-    refreshInventory()
+eggsTabBtn.MouseButton1Click:Connect(function()
+    shopTabBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    eggsTabBtn.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
+    petsTabBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    upgradesTabBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    refreshEggs()
 end)
 
-upgradesBtn.MouseButton1Click:Connect(function()
-    shopBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-    eggsBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-    upgradesBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+petsTabBtn.MouseButton1Click:Connect(function()
+    shopTabBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    eggsTabBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    petsTabBtn.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
+    upgradesTabBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    refreshPets()
+end)
+
+upgradesTabBtn.MouseButton1Click:Connect(function()
+    shopTabBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    eggsTabBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    petsTabBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    upgradesTabBtn.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
     refreshUpgrades()
 end)
 
--- Initial setup
+-- Hatch event
+hatchEggEvent.OnClientEvent:Connect(function(petType, petData)
+    showHatchingCutscene(petType)
+end)
+
+-- Initial
 refreshShop()
 
-print("✅✅✅ SHOP GUI IS READY! LOOK AT RIGHT SIDE! ✅✅✅")
+print("✅ GUI V2 READY!")
