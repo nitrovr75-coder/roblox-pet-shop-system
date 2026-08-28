@@ -1,4 +1,4 @@
--- Shop System with Leaderstat Integration & Hatching
+-- SHOP SYSTEM WITH LEADERSTAT INTEGRATION & HATCHING
 -- Place in ServerScriptService
 
 local Players = game:GetService("Players")
@@ -61,6 +61,14 @@ if not hatchEggEvent then
     hatchEggEvent.Parent = hatchRemotes
 end
 
+-- Equip pet remote
+local equipPetEvent = hatchRemotes:FindFirstChild("EquipPet")
+if not equipPetEvent then
+    equipPetEvent = Instance.new("RemoteEvent")
+    equipPetEvent.Name = "EquipPet"
+    equipPetEvent.Parent = hatchRemotes
+end
+
 print("✅ All remotes created")
 
 -- Shop Configuration
@@ -97,15 +105,15 @@ local SHOP_EGGS = {
 
 -- Pet Configuration
 local PETS = {
-    ["Mouse"] = { name = "Mouse", rarity = "Common" },
-    ["Bunny"] = { name = "Bunny", rarity = "Common" },
-    ["Chicken"] = { name = "Chicken", rarity = "Common" },
-    ["Dragon"] = { name = "Dragon", rarity = "Rare" },
-    ["Phoenix"] = { name = "Phoenix", rarity = "Rare" },
-    ["Unicorn"] = { name = "Unicorn", rarity = "Rare" },
-    ["LegendaryDragon"] = { name = "Legendary Dragon", rarity = "Epic" },
-    ["GoldenPhoenix"] = { name = "Golden Phoenix", rarity = "Epic" },
-    ["MythicalUnicorn"] = { name = "Mythical Unicorn", rarity = "Epic" }
+    ["Mouse"] = { name = "Mouse", rarity = "Common", color = Color3.fromRGB(150, 150, 150) },
+    ["Bunny"] = { name = "Bunny", rarity = "Common", color = Color3.fromRGB(255, 200, 200) },
+    ["Chicken"] = { name = "Chicken", rarity = "Common", color = Color3.fromRGB(255, 200, 100) },
+    ["Dragon"] = { name = "Dragon", rarity = "Rare", color = Color3.fromRGB(200, 50, 50) },
+    ["Phoenix"] = { name = "Phoenix", rarity = "Rare", color = Color3.fromRGB(255, 100, 0) },
+    ["Unicorn"] = { name = "Unicorn", rarity = "Rare", color = Color3.fromRGB(200, 100, 255) },
+    ["LegendaryDragon"] = { name = "Legendary Dragon", rarity = "Epic", color = Color3.fromRGB(100, 0, 100) },
+    ["GoldenPhoenix"] = { name = "Golden Phoenix", rarity = "Epic", color = Color3.fromRGB(255, 215, 0) },
+    ["MythicalUnicorn"] = { name = "Mythical Unicorn", rarity = "Epic", color = Color3.fromRGB(255, 50, 200) }
 }
 
 -- Player inventory storage
@@ -136,6 +144,8 @@ end
 local function initPlayerInventory(player)
     playerInventory[player.UserId] = {
         eggs = {},
+        pets = {},
+        equippedPet = nil,
         upgrades = {
             eggHatchSpeed = 1,
             currencyMultiplier = 1,
@@ -163,6 +173,39 @@ local function removeEggFromInventory(player, slotIndex)
     local data = playerInventory[player.UserId]
     if data.eggs[slotIndex] then
         table.remove(data.eggs, slotIndex)
+        return true
+    end
+    return false
+end
+
+-- Add pet to inventory
+local function addPetToInventory(player, petType)
+    local data = playerInventory[player.UserId]
+    table.insert(data.pets, {
+        type = petType,
+        name = PETS[petType].name,
+        rarity = PETS[petType].rarity,
+        color = PETS[petType].color,
+        obtainedAt = tick()
+    })
+    return true
+end
+
+-- Get pet from inventory by ID
+local function getPetFromInventory(player, petIndex)
+    local data = playerInventory[player.UserId]
+    if data.pets[petIndex] then
+        return data.pets[petIndex]
+    end
+    return nil
+end
+
+-- Equip pet
+local function equipPet(player, petIndex)
+    local pet = getPetFromInventory(player, petIndex)
+    if pet then
+        playerInventory[player.UserId].equippedPet = petIndex
+        print("✅ " .. player.Name .. " equipped: " .. pet.name)
         return true
     end
     return false
@@ -248,6 +291,9 @@ hatchEggEvent.OnServerEvent:Connect(function(player, slotIndex)
     local petData = PETS[petType]
     print("✅ Pet selected: " .. petType)
     
+    -- Add pet to inventory
+    addPetToInventory(player, petType)
+    
     -- Send hatch event to client with pet data
     hatchEggEvent:FireClient(player, petType, petData)
     
@@ -255,6 +301,19 @@ hatchEggEvent.OnServerEvent:Connect(function(player, slotIndex)
     wait(1)
     removeEggFromInventory(player, slotIndex)
     print("✅ Egg removed from inventory at slot " .. slotIndex)
+end)
+
+-- Equip pet handler
+equipPetEvent.OnServerEvent:Connect(function(player, petIndex)
+    print("✅ " .. player.Name .. " trying to equip pet at index " .. petIndex)
+    
+    if not playerInventory[player.UserId] then
+        initPlayerInventory(player)
+    end
+    
+    if equipPet(player, petIndex) then
+        equipPetEvent:FireClient(player, petIndex, true)
+    end
 end)
 
 -- Get shop data handler
@@ -284,7 +343,13 @@ getInventoryFunc.OnServerInvoke = function(player)
     if not playerInventory[player.UserId] then
         initPlayerInventory(player)
     end
-    return playerInventory[player.UserId].eggs
+    
+    local data = playerInventory[player.UserId]
+    return {
+        eggs = data.eggs,
+        pets = data.pets,
+        equippedPet = data.equippedPet
+    }
 end
 
 -- Player join event
