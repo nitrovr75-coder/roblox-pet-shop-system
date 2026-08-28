@@ -1,4 +1,4 @@
--- Shop System with Leaderstat Integration
+-- Shop System with Leaderstat Integration & Hatching
 -- Place in ServerScriptService
 
 local Players = game:GetService("Players")
@@ -13,6 +13,15 @@ if not shopRemotes then
     shopRemotes.Name = "ShopRemotes"
     shopRemotes.Parent = ReplicatedStorage
     print("✅ Created ShopRemotes folder")
+end
+
+-- Create hatch remotes folder
+local hatchRemotes = ReplicatedStorage:FindFirstChild("HatchRemotes")
+if not hatchRemotes then
+    hatchRemotes = Instance.new("Folder")
+    hatchRemotes.Name = "HatchRemotes"
+    hatchRemotes.Parent = ReplicatedStorage
+    print("✅ Created HatchRemotes folder")
 end
 
 -- Create remotes if they don't exist
@@ -44,7 +53,15 @@ if not getInventoryFunc then
     getInventoryFunc.Parent = shopRemotes
 end
 
-print("✅ All shop remotes created")
+-- Hatch remotes
+local hatchEggEvent = hatchRemotes:FindFirstChild("HatchEgg")
+if not hatchEggEvent then
+    hatchEggEvent = Instance.new("RemoteEvent")
+    hatchEggEvent.Name = "HatchEgg"
+    hatchEggEvent.Parent = hatchRemotes
+end
+
+print("✅ All remotes created")
 
 -- Shop Configuration
 local SHOP_EGGS = {
@@ -78,7 +95,20 @@ local SHOP_EGGS = {
     }
 }
 
--- Player inventory storage (separate from coins leaderstat)
+-- Pet Configuration
+local PETS = {
+    ["Mouse"] = { name = "Mouse", rarity = "Common" },
+    ["Bunny"] = { name = "Bunny", rarity = "Common" },
+    ["Chicken"] = { name = "Chicken", rarity = "Common" },
+    ["Dragon"] = { name = "Dragon", rarity = "Rare" },
+    ["Phoenix"] = { name = "Phoenix", rarity = "Rare" },
+    ["Unicorn"] = { name = "Unicorn", rarity = "Rare" },
+    ["LegendaryDragon"] = { name = "Legendary Dragon", rarity = "Epic" },
+    ["GoldenPhoenix"] = { name = "Golden Phoenix", rarity = "Epic" },
+    ["MythicalUnicorn"] = { name = "Mythical Unicorn", rarity = "Epic" }
+}
+
+-- Player inventory storage
 local playerInventory = {}
 
 -- Create leaderstat for coins
@@ -128,6 +158,26 @@ local function addEggToInventory(player, eggType)
     return false
 end
 
+-- Remove egg from inventory
+local function removeEggFromInventory(player, slotIndex)
+    local data = playerInventory[player.UserId]
+    if data.eggs[slotIndex] then
+        table.remove(data.eggs, slotIndex)
+        return true
+    end
+    return false
+end
+
+-- Get random pet from egg
+local function getPetFromEgg(eggType)
+    local eggData = SHOP_EGGS[eggType]
+    if not eggData then return nil end
+    
+    local petChances = eggData.petChances
+    local selectedPet = petChances[math.random(1, #petChances)]
+    return selectedPet
+end
+
 -- Buy egg handler
 buyEggEvent.OnServerEvent:Connect(function(player, eggType)
     print("💰 " .. player.Name .. " is trying to buy: " .. eggType)
@@ -168,6 +218,43 @@ buyEggEvent.OnServerEvent:Connect(function(player, eggType)
         coins.Value = coins.Value + eggData.price -- Refund if inventory full
         print("❌ Inventory full for " .. player.Name)
     end
+end)
+
+-- Hatch egg handler
+hatchEggEvent.OnServerEvent:Connect(function(player, slotIndex)
+    print("🐣 " .. player.Name .. " is trying to hatch egg at slot " .. slotIndex)
+    
+    if not playerInventory[player.UserId] then
+        initPlayerInventory(player)
+    end
+    
+    local inventory = playerInventory[player.UserId].eggs
+    
+    if not inventory[slotIndex] then
+        print("❌ No egg at slot " .. slotIndex)
+        return
+    end
+    
+    local eggType = inventory[slotIndex].type
+    print("🐣 Egg type at slot " .. slotIndex .. ": " .. eggType)
+    
+    -- Get random pet
+    local petType = getPetFromEgg(eggType)
+    if not petType then
+        print("❌ Failed to get pet from egg type: " .. eggType)
+        return
+    end
+    
+    local petData = PETS[petType]
+    print("✅ Pet selected: " .. petType)
+    
+    -- Send hatch event to client with pet data
+    hatchEggEvent:FireClient(player, petType, petData)
+    
+    -- Remove egg from inventory after a short delay to let animation play
+    wait(1)
+    removeEggFromInventory(player, slotIndex)
+    print("✅ Egg removed from inventory at slot " .. slotIndex)
 end)
 
 -- Get shop data handler
