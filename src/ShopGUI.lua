@@ -33,6 +33,109 @@ local coins = leaderstats:WaitForChild("Coins")
 
 print("✅ Coins leaderstat found: $" .. coins.Value)
 
+-- Pet data with randomized messages
+local PETS = {
+    ["Mouse"] = { 
+        name = "Mouse", 
+        rarity = "Common",
+        messages = {
+            "A tiny mouse appeared! 🐭",
+            "You got a squeaky mouse! 🐭",
+            "A little mouse scurried out! 🐭",
+            "Meet your new mouse friend! 🐭",
+            "A curious mouse is here! 🐭"
+        }
+    },
+    ["Bunny"] = { 
+        name = "Bunny", 
+        rarity = "Common",
+        messages = {
+            "A fluffy bunny hopped out! 🐰",
+            "You got an adorable bunny! 🐰",
+            "A cute bunny appeared! 🐰",
+            "Meet your fluffy bunny! 🐰",
+            "A bouncy bunny is ready! 🐰"
+        }
+    },
+    ["Chicken"] = { 
+        name = "Chicken", 
+        rarity = "Common",
+        messages = {
+            "A chicken has hatched! 🐔",
+            "You got a loud chicken! 🐔",
+            "A clucking chicken appeared! 🐔",
+            "Meet your feathered chicken! 🐔",
+            "Your chicken is ready to go! 🐔"
+        }
+    },
+    ["Dragon"] = { 
+        name = "Dragon", 
+        rarity = "Rare",
+        messages = {
+            "An epic dragon emerged! 🐉",
+            "You got a powerful dragon! 🐉",
+            "A magnificent dragon appeared! 🐉",
+            "Meet your fearless dragon! 🐉",
+            "A dragon rises from the egg! 🐉"
+        }
+    },
+    ["Phoenix"] = { 
+        name = "Phoenix", 
+        rarity = "Rare",
+        messages = {
+            "A phoenix rose from the flames! 🔥",
+            "You got a legendary phoenix! 🔥",
+            "A majestic phoenix appeared! 🔥",
+            "Meet your fiery phoenix! 🔥",
+            "A phoenix bursts forth! 🔥"
+        }
+    },
+    ["Unicorn"] = { 
+        name = "Unicorn", 
+        rarity = "Rare",
+        messages = {
+            "A magical unicorn appeared! ✨",
+            "You got a mystical unicorn! ✨",
+            "A beautiful unicorn emerged! ✨",
+            "Meet your enchanted unicorn! ✨",
+            "A unicorn shimmers into view! ✨"
+        }
+    },
+    ["LegendaryDragon"] = { 
+        name = "Legendary Dragon", 
+        rarity = "Epic",
+        messages = {
+            "AN ANCIENT DRAGON HAS AWAKENED! 🐉⚡",
+            "You got a LEGENDARY dragon! 🐉⚡",
+            "BEHOLD! An ancient dragon emerges! 🐉⚡",
+            "Meet the LEGENDARY dragon! 🐉⚡",
+            "A MYTHICAL dragon rises before you! 🐉⚡"
+        }
+    },
+    ["GoldenPhoenix"] = { 
+        name = "Golden Phoenix", 
+        rarity = "Epic",
+        messages = {
+            "A GOLDEN PHOENIX RISES! ✨🔥",
+            "You got a GOLDEN PHOENIX! ✨🔥",
+            "BEHOLD! A legendary golden phoenix! ✨🔥",
+            "Meet the GOLDEN PHOENIX! ✨🔥",
+            "A MAGNIFICENT golden phoenix emerges! ✨🔥"
+        }
+    },
+    ["MythicalUnicorn"] = { 
+        name = "Mythical Unicorn", 
+        rarity = "Epic",
+        messages = {
+            "A MYTHICAL UNICORN APPEARS! 🌟✨",
+            "You got a MYTHICAL UNICORN! 🌟✨",
+            "BEHOLD! A celestial unicorn! 🌟✨",
+            "Meet the MYTHICAL UNICORN! 🌟✨",
+            "A DIVINE unicorn manifests! 🌟✨"
+        }
+    }
+}
+
 -- Create main GUI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ShopGui"
@@ -136,6 +239,16 @@ content.Parent = panel
 local function showHatchingCutscene(petType)
     print("🎬 Starting hatching cutscene for: " .. petType)
     
+    local petData = PETS[petType]
+    if not petData then
+        print("❌ Pet not found: " .. petType)
+        return
+    end
+    
+    -- Get random message from pet's message pool
+    local randomMessage = petData.messages[math.random(1, #petData.messages)]
+    print("💬 Random message: " .. randomMessage)
+    
     -- Create cutscene GUI
     local cutsceneGui = Instance.new("ScreenGui")
     cutsceneGui.Name = "HatchCutscene"
@@ -208,18 +321,18 @@ local function showHatchingCutscene(petType)
     
     wait(0.5)
     
-    -- Show pet obtained message
+    -- Show pet obtained message with random message
     fadeBackground.BackgroundTransparency = 1
     
     local messageLabel = Instance.new("TextLabel")
     messageLabel.Name = "PetObtainedMessage"
-    messageLabel.Size = UDim2.new(0, 600, 0, 200)
-    messageLabel.Position = UDim2.new(0.5, -300, 0.5, -100)
+    messageLabel.Size = UDim2.new(0, 600, 0, 250)
+    messageLabel.Position = UDim2.new(0.5, -300, 0.5, -125)
     messageLabel.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     messageLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
-    messageLabel.TextSize = 48
+    messageLabel.TextSize = 36
     messageLabel.Font = Enum.Font.GothamBold
-    messageLabel.Text = "🎉 YOU GOT 🎉\n\n" .. petType .. "!"
+    messageLabel.Text = randomMessage .. "\n\n" .. petData.name .. "\n(" .. petData.rarity .. ")"
     messageLabel.TextWrapped = true
     messageLabel.BorderColor3 = Color3.fromRGB(255, 215, 0)
     messageLabel.BorderSizePixel = 3
@@ -417,7 +530,6 @@ local function refreshInventory()
         
         hatchBtn.MouseButton1Click:Connect(function()
             print("🐣 Hatching egg at slot " .. i)
-            showHatchingCutscene("Getting your pet...")
             hatchEggEvent:FireServer(i)
             wait(5)
             refreshInventory()
